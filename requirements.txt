@@ -1,7 +1,5 @@
 streamlit
 requests
-transformers
-torch
 matplotlib
 scikit-learn
 numpy
