@@ -2,25 +2,30 @@ import streamlit as st
 import requests
 import os
 import matplotlib.pyplot as plt
-from transformers import pipeline
 from sklearn.linear_model import LinearRegression
 import numpy as np
 
 # ----------------------------
-# Page Config
+# Page Setup
 # ----------------------------
 st.set_page_config(page_title="AI Multi Chatbot", layout="centered")
 st.title("🚀 AI Multi-Functional Chatbot")
 
 # ----------------------------
-# Lazy Load Sentiment Model (Important for Render)
+# Simple Lightweight Sentiment
 # ----------------------------
-@st.cache_resource
-def load_sentiment_model():
-    return pipeline(
-        "sentiment-analysis",
-        model="distilbert-base-uncased-finetuned-sst-2-english"
-    )
+def simple_sentiment(text):
+    positive_words = ["good", "great", "happy", "excellent", "amazing", "love"]
+    negative_words = ["bad", "sad", "poor", "angry", "worst", "hate"]
+
+    text = text.lower()
+
+    if any(word in text for word in positive_words):
+        return {"label": "POSITIVE", "score": 0.9}
+    elif any(word in text for word in negative_words):
+        return {"label": "NEGATIVE", "score": 0.9}
+    else:
+        return {"label": "NEUTRAL", "score": 0.5}
 
 # ----------------------------
 # DeepSeek API Function
@@ -52,10 +57,10 @@ def ask_deepseek(question):
         if response.status_code == 200:
             return response.json()["choices"][0]["message"]["content"]
         else:
-            return f"Error: {response.text}"
+            return f"API Error: {response.text}"
 
     except Exception as e:
-        return f"API Error: {str(e)}"
+        return f"Connection Error: {str(e)}"
 
 # ----------------------------
 # Prediction Function
@@ -74,10 +79,11 @@ def predict_value():
 # Visualization Function
 # ----------------------------
 def visualize_sentiment(label):
-    labels = ["Positive", "Negative"]
+    labels = ["Positive", "Negative", "Neutral"]
     values = [
         1 if label == "POSITIVE" else 0,
-        1 if label == "NEGATIVE" else 0
+        1 if label == "NEGATIVE" else 0,
+        1 if label == "NEUTRAL" else 0
     ]
 
     fig, ax = plt.subplots()
@@ -95,18 +101,16 @@ if st.button("Submit"):
     if not user_input:
         st.warning("Please enter a question.")
     else:
-        # 1️⃣ Chatbot Answer
+        # 1️⃣ Chatbot Response
         answer = ask_deepseek(user_input)
         st.subheader("🤖 Chatbot Answer")
         st.write(answer)
 
-        # 2️⃣ Sentiment Analysis (Loaded only when needed)
-        sentiment_model = load_sentiment_model()
-        sentiment = sentiment_model(user_input)[0]
-
+        # 2️⃣ Sentiment Analysis
+        sentiment = simple_sentiment(user_input)
         st.subheader("📊 Sentiment Analysis")
         st.write(f"Label: {sentiment['label']}")
-        st.write(f"Confidence: {round(sentiment['score'],2)}")
+        st.write(f"Confidence: {sentiment['score']}")
 
         # 3️⃣ Visualization Trigger
         if "visualize" in user_input.lower():
